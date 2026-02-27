@@ -35,6 +35,7 @@ export default async function handler(req, res) {
       preview: r.preview_url,
       votes: r.votes ?? 0,
       voters: r.voters ?? [],
+      link: r.link_url,
       lastUpdatedAt: r.updated_at ?? r.created_at,
     }));
 
