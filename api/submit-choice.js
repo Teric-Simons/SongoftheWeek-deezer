@@ -23,14 +23,15 @@ export default async function handler(req, res) {
     }
 
     const { data, error } = await supabase.rpc("vote_for_song", {
-      p_track_id: track.id,
-      p_title: track.title,
-      p_artist: track.artist,
-      p_album: track.album || null,
-      p_cover_url: track.cover || null,
-      p_preview_url: track.preview || null,
-      p_chosen_by: chosenBy,
-    });
+  p_track_id: track.id,
+  p_title: track.title,
+  p_artist: track.artist,
+  p_album: track.album || null,
+  p_cover_url: track.cover || null,
+  p_preview_url: track.preview || null,
+  p_link_url: track.link || null,   // ✅ ADD THIS
+  p_chosen_by: chosenBy,
+});
 
     if (error) return res.status(500).json({ error: error.message });
 
