@@ -20,8 +20,7 @@ export default async function handler(req, res) {
   try {
     const { data, error } = await supabase
       .from("song_choices")
-      .select("track_id,title,artist,album,cover_url,preview_url,votes,voters,updated_at,created_at")
-      .order("votes", { ascending: false })
+.select("track_id,title,artist,album,cover_url,preview_url,link_url,votes,voters,updated_at,created_at")      .order("votes", { ascending: false })
       .order("updated_at", { ascending: false })
       .limit(10);
 
