@@ -26,18 +26,34 @@ export default async function handler(req, res) {
 
     if (error) return res.status(500).json({ error: error.message });
 
-    const items = (data || []).map((r) => ({
+  // Fetch fresh preview URLs from Deezer
+const items = await Promise.all(
+  (data || []).map(async (r) => {
+    let freshPreview = null;
+
+    try {
+      const dzRes = await fetch(`https://api.deezer.com/track/${r.track_id}`);
+      const dzData = await dzRes.json();
+      freshPreview = dzData?.preview || null;
+    } catch (err) {
+      // If Deezer fails, fallback to stored preview
+      freshPreview = r.preview_url || null;
+    }
+
+    return {
       id: r.track_id,
       title: r.title,
       artist: r.artist,
       album: r.album,
       cover: r.cover_url,
-      preview: r.preview_url,
+      preview: freshPreview, // ✅ use fresh signed URL
       votes: r.votes ?? 0,
       voters: r.voters ?? [],
       link: r.link_url,
       lastUpdatedAt: r.updated_at ?? r.created_at,
-    }));
+    };
+  })
+);
 
     return res.status(200).json({ items });
   } catch (e) {
