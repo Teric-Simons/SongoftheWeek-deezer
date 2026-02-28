@@ -18,11 +18,12 @@ export default async function handler(req, res) {
   if (req.method !== "GET") return res.status(405).json({ error: "Use GET" });
 
   try {
-    const { data, error } = await supabase
-      .from("song_choices")
-.select("track_id,title,artist,album,cover_url,preview_url,link_url,votes,voters,updated_at,created_at")      .order("votes", { ascending: false })
-      .order("updated_at", { ascending: false })
-      .limit(10);
+  const { data, error } = await supabase
+  .from("song_choices")
+  .select("track_id,title,artist,album,cover_url,preview_url,link_url,votes,voters")
+  .eq("cycle_start", (await supabase.rpc("current_cycle_start_jm")).data)
+  .order("votes", { ascending: false })
+  .limit(50);
 
     if (error) return res.status(500).json({ error: error.message });
 
