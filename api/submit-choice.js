@@ -22,7 +22,7 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "Missing chosenBy or track fields" });
     }
 
-    const { data, error } = await supabase.rpc("vote_for_song", {
+    const { data, error } = await supabase.rpc("toggle_vote_for_song", {
   p_track_id: track.id,
   p_title: track.title,
   p_artist: track.artist,
