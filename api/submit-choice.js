@@ -17,7 +17,8 @@ export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Use POST" });
 
   try {
-    const { chosenBy, track, forceReplace } = req.body || {};
+    const { chosenBy, track, forceReplace, action } = req.body || {};
+    const safeAction = action === "choose" ? "choose" : "toggle"; // default
 
     if (!chosenBy || !track?.id || !track?.title || !track?.artist) {
       return res.status(400).json({ error: "Missing chosenBy or track fields" });
@@ -33,14 +34,20 @@ export default async function handler(req, res) {
       p_link_url: track.link || null,
       p_chosen_by: chosenBy,
       p_force_replace: !!forceReplace,
+      p_action: safeAction, // ✅ NEW
     });
 
     if (error) {
-      const msg = error.message || "Vote failed";
+      const msg = error.message || "Request failed";
 
       // ✅ Frontend will detect 409 and ask for confirmation
       if (msg.startsWith("CONFIRM_REPLACE:")) {
         return res.status(409).json({ error: msg });
+      }
+
+      // ✅ User-facing rule errors should be 400 (not 500)
+      if (msg.includes("You cannot vote for your own song")) {
+        return res.status(400).json({ error: msg });
       }
 
       return res.status(500).json({ error: msg });
