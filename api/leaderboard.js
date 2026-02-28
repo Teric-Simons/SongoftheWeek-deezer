@@ -18,45 +18,53 @@ export default async function handler(req, res) {
   if (req.method !== "GET") return res.status(405).json({ error: "Use GET" });
 
   try {
-  const { data, error } = await supabase
-  .from("song_choices")
-  .select("track_id,title,artist,album,cover_url,preview_url,link_url,votes,voters")
-  .eq("cycle_start", (await supabase.rpc("current_cycle_start_jm")).data)
-  .order("votes", { ascending: false })
-  .limit(50);
+    // ✅ current cycle (Friday 3pm Jamaica)
+    const { data: cycleRow, error: cycleErr } = await supabase.rpc("current_cycle_start_jm");
+    if (cycleErr) return res.status(500).json({ error: cycleErr.message });
+
+    const cycleStart = cycleRow; // rpc returns timestamptz
+
+    const { data, error } = await supabase
+      .from("song_choices")
+      .select(
+        "cycle_start,track_id,title,artist,album,cover_url,preview_url,link_url,votes,voters,updated_at,created_at"
+      )
+      .eq("cycle_start", cycleStart)
+      .order("votes", { ascending: false })
+      .order("updated_at", { ascending: false })
+      .limit(10);
 
     if (error) return res.status(500).json({ error: error.message });
 
-  // Fetch fresh preview URLs from Deezer
-const items = await Promise.all(
-  (data || []).map(async (r) => {
-    let freshPreview = null;
+    // Fetch fresh preview URLs from Deezer (optional but keeping your behavior)
+    const items = await Promise.all(
+      (data || []).map(async (r) => {
+        let freshPreview = null;
 
-    try {
-      const dzRes = await fetch(`https://api.deezer.com/track/${r.track_id}`);
-      const dzData = await dzRes.json();
-      freshPreview = dzData?.preview || null;
-    } catch (err) {
-      // If Deezer fails, fallback to stored preview
-      freshPreview = r.preview_url || null;
-    }
+        try {
+          const dzRes = await fetch(`https://api.deezer.com/track/${r.track_id}`);
+          const dzData = await dzRes.json();
+          freshPreview = dzData?.preview || null;
+        } catch {
+          freshPreview = r.preview_url || null;
+        }
 
-    return {
-      id: r.track_id,
-      title: r.title,
-      artist: r.artist,
-      album: r.album,
-      cover: r.cover_url,
-      preview: freshPreview, // ✅ use fresh signed URL
-      votes: r.votes ?? 0,
-      voters: r.voters ?? [],
-      link: r.link_url,
-      lastUpdatedAt: r.updated_at ?? r.created_at,
-    };
-  })
-);
+        return {
+          id: r.track_id,
+          title: r.title,
+          artist: r.artist,
+          album: r.album,
+          cover: r.cover_url,
+          preview: freshPreview,
+          votes: r.votes ?? 0,
+          voters: r.voters ?? [],
+          link: r.link_url,
+          lastUpdatedAt: r.updated_at ?? r.created_at,
+        };
+      })
+    );
 
-    return res.status(200).json({ items });
+    return res.status(200).json({ items, cycleStart });
   } catch (e) {
     return res.status(500).json({ error: e?.message || "Server error" });
   }
