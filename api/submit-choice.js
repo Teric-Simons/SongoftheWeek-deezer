@@ -17,22 +17,34 @@ export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Use POST" });
 
   try {
-    const { chosenBy, track } = req.body || {};
+    const { chosenBy, track, forceReplace } = req.body || {};
+
     if (!chosenBy || !track?.id || !track?.title || !track?.artist) {
       return res.status(400).json({ error: "Missing chosenBy or track fields" });
     }
-const { data, error } = await supabase.rpc("toggle_vote_for_song", {
-  p_track_id: track.id,
-  p_title: track.title,
-  p_artist: track.artist,
-  p_album: track.album || null,
-  p_cover_url: track.cover || null,
-  p_preview_url: track.preview || null,
-  p_link_url: track.link || null,
-  p_chosen_by: chosenBy,
-  p_force_replace: !!forceReplace,
-});
-    if (error) return res.status(500).json({ error: error.message });
+
+    const { data, error } = await supabase.rpc("toggle_vote_for_song", {
+      p_track_id: track.id,
+      p_title: track.title,
+      p_artist: track.artist,
+      p_album: track.album || null,
+      p_cover_url: track.cover || null,
+      p_preview_url: track.preview || null,
+      p_link_url: track.link || null,
+      p_chosen_by: chosenBy,
+      p_force_replace: !!forceReplace,
+    });
+
+    if (error) {
+      const msg = error.message || "Vote failed";
+
+      // ✅ Frontend will detect 409 and ask for confirmation
+      if (msg.startsWith("CONFIRM_REPLACE:")) {
+        return res.status(409).json({ error: msg });
+      }
+
+      return res.status(500).json({ error: msg });
+    }
 
     return res.status(200).json({ ok: true, result: data?.[0] || null });
   } catch (e) {
