@@ -18,28 +18,27 @@ export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Use POST" });
 
   try {
-    const { userId, securityQuestion } = req.body || {};
+    const { userId, securityAnswer } = req.body || {};
 
     if (!userId) return res.status(400).json({ error: "Missing userId" });
 
-    const q = (securityQuestion || "").trim();
-    if (!q) return res.status(400).json({ error: "Security question cannot be empty" });
-    if (q.length < 8) return res.status(400).json({ error: "Security question is too short" });
+    const answer = (securityAnswer || "").trim();
+    if (!answer) return res.status(400).json({ error: "Security answer cannot be empty" });
+    if (answer.length < 2) return res.status(400).json({ error: "Security answer is too short" });
 
-    // ✅ Only set if currently NULL or empty (prevents overwriting once set)
+    // ✅ Only set if currently NULL or empty (prevents overwriting)
     const { data, error } = await supabase
       .from("app_users")
-      .update({ security_question: q })
+      .update({ security_answer: answer })
       .eq("id", userId)
-      .or("security_question.is.null,security_question.eq.") // null OR empty string
-      .select("id,name,security_question")
+      .or("security_answer.is.null,security_answer.eq.") // null OR empty string
+      .select("id,name,security_answer")
       .single();
 
     if (error) return res.status(500).json({ error: error.message });
 
-    // If no row returned, it likely means it was already set and the .or condition didn't match.
     if (!data) {
-      return res.status(409).json({ error: "Security question already set for this user." });
+      return res.status(409).json({ error: "Security answer already set for this user." });
     }
 
     return res.status(200).json({ user: data });
