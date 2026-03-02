@@ -20,7 +20,7 @@ export default async function handler(req, res) {
   try {
     const { data, error } = await supabase
       .from("app_users")
-      .select("id,name,is_active,security_answer,created_at,updated_at") // ✅ add security_answer
+      .select("id,name,is_active,security_answer,created_at,updated_at")
       .eq("is_active", true)
       .order("name", { ascending: true });
 
@@ -29,7 +29,7 @@ export default async function handler(req, res) {
     const users = (data || []).map((u) => ({
       id: u.id,
       name: u.name,
-      security_answer: u.security_answer ?? null, // ✅ include
+      has_security_answer: u.security_answer != null && String(u.security_answer).trim() !== "",
     }));
 
     return res.status(200).json({ users });
