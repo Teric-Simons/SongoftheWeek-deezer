@@ -8,7 +8,7 @@ const supabase = createClient(
 const ORIGIN_ALLOW = "https://teric-simons.github.io"; // match your GitHub Pages origin
 
 export default async function handler(req, res) {
-  // CORS (same as leaderboard)
+  // CORS
   res.setHeader("Access-Control-Allow-Origin", ORIGIN_ALLOW);
   res.setHeader("Vary", "Origin");
   res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
@@ -20,7 +20,7 @@ export default async function handler(req, res) {
   try {
     const { data, error } = await supabase
       .from("app_users")
-      .select("id,name,is_active,created_at,updated_at")
+      .select("id,name,is_active,security_question,created_at,updated_at") // ✅ add
       .eq("is_active", true)
       .order("name", { ascending: true });
 
@@ -29,6 +29,7 @@ export default async function handler(req, res) {
     const users = (data || []).map((u) => ({
       id: u.id,
       name: u.name,
+      security_question: u.security_question ?? null, // ✅ include
     }));
 
     return res.status(200).json({ users });
