@@ -33,12 +33,13 @@ export default async function handler(req, res) {
       .eq("id", userId)
       .or("security_answer.is.null,security_answer.eq.") // null OR empty string
       .select("id,name,security_answer")
-      .single();
+      .maybeSingle(); // ✅ fixes "Cannot coerce..."
 
     if (error) return res.status(500).json({ error: error.message });
 
+    // ✅ if no row matched, it means answer is already set (or user not found)
     if (!data) {
-      return res.status(409).json({ error: "Security answer already set for this user." });
+      return res.status(409).json({ error: "Security answer already set (or user not found)." });
     }
 
     return res.status(200).json({ user: data });
